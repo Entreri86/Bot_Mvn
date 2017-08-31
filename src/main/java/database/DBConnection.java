@@ -29,7 +29,7 @@ public class DBConnection {
 		try {
 			Class.forName(BuildVariables.CONTROLLER_DB).newInstance();//Creamos instancia pasandole el controlador
 			//Abrimos la conexion pasandole los datos de la conexion.
-			connection = DriverManager.getConnection(BuildVariables.LINK_DB,BuildVariables.USER_DB,BuildVariables.PASSWORD);
+			connection = DriverManager.getConnection(BuildVariables.LINK_DB, BuildVariables.USER_DB, BuildVariables.PASSWORD);
 		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
@@ -89,8 +89,8 @@ public class DBConnection {
 	 * @return consulta precompilada.
 	 * @throws SQLException en caso de fallar la consulta.
 	 */
-	public PreparedStatement getPreparedStatement (String query,int flags) throws SQLException{
-		return this.currentConnection.prepareStatement(query,flags);
+	public PreparedStatement getPreparedStatement (String query, int flags) throws SQLException{
+		return this.currentConnection.prepareStatement(query, flags);
 	}
 	/**
 	 * Metodo encargado de iniciar las transacciones en la db.
