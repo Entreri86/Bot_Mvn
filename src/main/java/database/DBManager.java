@@ -5,10 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.logging.BotLogger;
-
 import services.Survey;
 
 public class DBManager {
@@ -41,9 +39,8 @@ public class DBManager {
 			  synchronized (DBManager.class) {//Sincronizamos el bloque para que solo se pueda acceder una vez al mismo tiempo
 				if (dbInstance == null){//Si no esta iniciada la instancia...La iniciamos
 					dbInstance = new DBManager(); 
-				} else{
-					currentInstance = dbInstance;
 				}
+				currentInstance = dbInstance;
 			}
 		  } else {
 			  currentInstance = dbInstance;
@@ -88,7 +85,7 @@ public class DBManager {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.INSERT_USERS_TABLE);//Recogemos el PreparedSt...
 			//Asignamos los parametros de la sentencia.
 			statement.setInt(1, userId);
-			statement.setString(2, firstName);
+			statement.setString(2, firstName);			
 			statement.setString(3, lastName);
 			statement.setString(4, userName);
 			statement.executeUpdate();//Ejecutamos la sentencia.
@@ -128,30 +125,69 @@ public class DBManager {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.READ_USERS_TABLE);
 			statement.setInt(1, userId);
 			ResultSet result = statement.executeQuery();
-			userName = userName.concat(result.getString(2).concat(" ").concat(result.getString(3)));
-			return userName;
+			if (!result.next()){//Si no hay ningun resultado es que es nulo.
+				return null;
+			}
+			String firstName = result.getString("firstName");
+			String lastName = result.getString("lastName");
+			userName = userName.concat(firstName).concat(" ").concat(lastName);			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
 			return null;
 		} 
+		  return userName;
 	  }
 	  /**
 	   * Metodo encargado de comprobar si el usuario dado por parametro esta insertado en la base de datos.
 	   * @param userId identificador del usuario a comprobar.
 	   * @return true si esta en la base de datos.
 	   */
-	  public boolean checkUserOnDb (Integer userId){
+	  public boolean isUserOnDb (Integer userId){
+		  Integer id = 0;
 		  try {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.READ_USERS_TABLE);
 			statement.setInt(1, userId);
-			statement.executeQuery();
+			ResultSet result = statement.executeQuery();
+			if (!result.next()){//Si no hay ningun resultado es que es nulo.				
+				return false;
+			}
+		    id = result.getInt("userId");//En otro caso cogemos el id.						
+		} catch (SQLException e) {
+			BotLogger.error(LOGTAG, e);
+			e.printStackTrace();			
+		} 
+		if (id.equals(userId)){//Si el id coincide es que esta en la BD y devolvemos true.			
 			return true;
+		} else {
+			return false;
+		}
+	  }
+	  
+	  /**
+	   * Metodo encargado de comprobar si en la base de datos hay encuestas relacionadas con el identificador de usuario dado.
+	   * @param userId identificador del usuario a comprobar.
+	   * @return true si el usuario tiene encuestas en la base de datos.
+	   */
+	  public boolean checkIfHaveSurveys(Integer userId){
+		  Integer id = 0;
+		  try {
+			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.CHECK_SURVEYS);
+			statement.setInt(1, userId);
+			ResultSet result = statement.executeQuery();
+			if (!result.next()){//Si no hay ningun resultado es que es nulo.				
+				return false;
+			}
+			id = result.getInt("userId");//En otro caso cogemos el id.
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
-			return false;
 		}
+		  if (id.equals(userId)){//Si el id coincide es que tiene encuestas en la BD y devolvemos true.			
+				return true;
+			} else {
+				return false;
+			}		  		  
 	  }
 	  /**
 	   * Metodo encargado de insertar los datos de la encuesta en la base de datos.
@@ -166,12 +202,12 @@ public class DBManager {
 		  String scoreToDb = "";
 		  String dot = ".";
 		  for (String answer: answers){
-			  answersToDb.concat(answer).concat(dot);//Añadimos al String la pregunta y un punto de separacion como marca.
+			  answersToDb = answersToDb.concat(answer).concat(dot);//Añadimos al String la pregunta y un punto de separacion como marca.
 		  }
 		  for (int i =0; i <answerScore.length;i++){
 			  String aux ="";//Declaramos el auxiliar y lo rellenamos con la puntuacion.			  
 			  aux = answerScore[i].toString();
-			  scoreToDb.concat(aux).concat(dot);//Concatenamos y marcamos con un punto para despues conocer las puntuaciones.					  
+			  scoreToDb = scoreToDb.concat(aux).concat(dot);//Concatenamos y marcamos con un punto para despues conocer las puntuaciones.					  
 		  }
 		  try {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.INSERT_SURVEY);

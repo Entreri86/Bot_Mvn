@@ -11,8 +11,7 @@ public class DataBaseStrings {
 	//Creacion de la tabla de comandos para el usuario segun su estado (administrador del grupo etc..).
 	public static final String CREATE_COMMANDS_TABLE = "CREATE TABLE IF NOT EXISTS CommandUsers (userId INTEGER PRIMARY KEY,"
 													   + " status INTEGER NOT NULL);";
-	
-	
+		
 	//Sentencia creacion tabla de los usuarios COMPROBADA Y OK.	
 	public static final String CREATE_USERS_TABLE = "CREATE TABLE IF NOT EXISTS UsersTable (userId INTEGER PRIMARY KEY,"
 			+ "firstName VARCHAR(30), lastName VARCHAR(30), userName VARCHAR(30));";		
@@ -33,5 +32,6 @@ public class DataBaseStrings {
 	public static final String READ_SURVEY = "SELECT question, answers, score FROM SurveysTable WHERE userId = ?;";
 	//Sentencia de eliminacion de la encuesta de la tabla de encuestas COMPROBADA Y OK.
 	public static final String DELETE_SURVEYS = "DELETE FROM SurveysTable WHERE userId = ?;";
-	
+	//Sentencia de comprobacion de si hay encuestas en la BD con relacion al usuario COMPROBADA Y OK.
+	public static final String CHECK_SURVEYS = "SELECT * FROM SurveysTable WHERE userId = ? ;";
 }
