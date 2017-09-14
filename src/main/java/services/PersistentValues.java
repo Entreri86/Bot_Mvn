@@ -12,13 +12,12 @@ import org.telegram.telegrambots.logging.BotLogger;
 public class PersistentValues {
 	
 	private static final String LOGTAG = "PersistentValues";	   
-    private final String fileName = "persistentValues.txt";
-    
+    private final String fileName = "persistentValues.txt";    
     /**
      * 
      * @param idValue
      */
-    public void saveIdValue (Integer idValue){
+    public synchronized void saveIdValue (Integer idValue){
     	if (new File(fileName).exists()){//Si el fichero existe...
     		try (FileWriter fileWriter = new FileWriter(new File(fileName))){//De esta manera nos ahorramos el close() Java7
     			fileWriter.write(idValue);//Sobreescribimos el valor del fichero.
@@ -43,7 +42,7 @@ public class PersistentValues {
      * 
      * @return
      */
-    public Integer getIdValue (){
+    public synchronized Integer getIdValue (){
     	Integer value = 0;
     	if (new File(fileName).exists()){//Si el fichero existe...
     		try (FileReader fileReader = new FileReader (new File(fileName))){
