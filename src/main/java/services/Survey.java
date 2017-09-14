@@ -11,17 +11,16 @@ import bot.BotConfig;
 
 public class Survey {
 	private String question;//Pregunta de la encuesta.
-	private String surveyText;//Texto final de la encuesta.
+	private String surveyText;//Texto final de la encuesta.	
 	private String inlineMsgId;//Id del mensaje del chat donde se estaba realizando la votacion.	
 	private String inlineQueryResultArticleId;//Id del Articulo para la lista de articulos.	
-	private ArrayList <String> answers;//Respuestas de la encuesta.	
+	private ArrayList <String> answers;//Respuestas de la encuesta.		
 	private ArrayList <Integer>values;//Puntuaciones de los votos, concuerda con las respuestas en cuanto a posicion.
 	private ArrayList <String> surveyMessage;//Lista para crear los mensajes de la encuesta, con marcas porcentuales etc.
 	private ArrayList <String> callBackDataList;//Lista con los datos de identificacion de los botones.
 	private HashMap <Integer, Integer> usersIdPos;//HashMap con clave userID y la posicion de voto.
-	private int peopleVoted;//Conteo de personas que han votado.
-	private int answerOptions;//Conteo de respuestas.
-	//TODO: Añadir todos los campos faltantes en la BD!!!
+	private int peopleVoted;//Conteo de personas que han votado.	
+	private int answerOptions;//Conteo de respuestas.	
 	/**
 	 * 
 	 */
@@ -65,11 +64,32 @@ public class Survey {
 		return pos;
 	}
 	/**
-	 * 
-	 * @return
+	 * Metodo que devuelve un ArrayList con las respuestas de la encuesta.
+	 * @return ArrayList con las respuestas.
+	 */
+	public ArrayList<String> getAnswers() {
+		return answers;
+	}
+	/**
+	 * Metodo que devuelve un ArrayList con los valores de la puntuacion de la encuesta.
+	 * @return ArrayList con puntuaciones de la encuesta.
+	 */
+	public ArrayList<Integer> getValues() {
+		return values;
+	}
+	/**
+	 * Metodo que retorna el texto completo de la encuesta.
+	 * @return texto completo de la encuesta.
 	 */
 	public String getSurveyText() {
 		return surveyText;
+	}
+	/**
+	 * Metodo que asigna el texto final de la encuesta.
+	 * @param surveyText texto final de la encuesta.
+	 */
+	public void setSurveyText(String surveyText) {
+		this.surveyText = surveyText;
 	}
 	/**
 	 * Metodo que retorna el HashMap del control de posiciones y usuarios que han votado.
@@ -79,28 +99,28 @@ public class Survey {
 		return usersIdPos;
 	}
 	/**
-	 * 
-	 * @return
+	 * Metodo que retorna el identificador del mensaje de la encuesta.
+	 * @return identificador del mensaje.
 	 */
 	public String getInlineMsgId() {
 		return inlineMsgId;
 	}
 	/**
-	 * 
-	 * @param inlineMsgId
+	 * Metodo que asigna el identificador del mensaje de la encuesta.
+	 * @param inlineMsgId identificador del mensaje.
 	 */
 	public void setInlineMsgId(String inlineMsgId) {
 		this.inlineMsgId = inlineMsgId;
 	}
 	/**
-	 * 
-	 * @return
+	 * Metodo que retorna el id del articulo.
+	 * @return id del articulo.
 	 */
 	public String getInlineQueryResultArticleId() {
 		return inlineQueryResultArticleId;
 	}
 	/**
-	 * 
+	 * Metodo encargado de asignar el Id del articulo en la encuesta.
 	 * @param inlineQueryResultArticleId
 	 */
 	public void setInlineQueryResultArticleId(String inlineQueryResultArticleId) {
@@ -113,7 +133,14 @@ public class Survey {
 	public void insertUserOnList (Integer userId,Integer pos){
 		this.usersIdPos.put(userId, pos);
 		peopleVotedUp();
-	}	
+	}
+	/**
+	 * 
+	 * @param peopleVoted
+	 */
+	public void setPeopleVoted(int peopleVoted) {
+		this.peopleVoted = peopleVoted;
+	}
 	/**
 	 * Metodo encargado de aumentar el contador de personas que han votado.
 	 */
@@ -193,6 +220,13 @@ public class Survey {
 		this.values.add(position, previousVal);		
 	}
 	/**
+	 * Metodo encargado de asignar la puntuacion al recuperar la encuesta de la base de datos.
+	 * @param value Valor a insertar en la lista.
+	 */
+	public void addScore (Integer value){
+		this.values.add(value);
+	}
+	/**
 	 * Metodo encargado de reducir la puntuacion dada segun la posicion por parametro.
 	 * @param position posicion a reducir la puntuacion.
 	 */
@@ -208,7 +242,8 @@ public class Survey {
 	 * @return Integer [] array de puntuaciones.
 	 */
 	public Integer [] parseScoresToInteger(String scores){
-		String [] stringScore = scores.split(".");//Recogemos en un Array todas las puntuaciones con el punto de separacion.
+		final String mark = "\\.";
+		String [] stringScore = scores.split(mark);//Recogemos en un Array todas las puntuaciones con el punto de separacion.
 		Integer [] finalScore = new Integer [stringScore.length];//Iniciamos un Array de Integer para parsear los resultados.
 		for (int i =0; i < stringScore.length;i++){
 			finalScore [i] = Integer.parseInt(stringScore[i]);//Parseamos cada String en un Integer y lo asignamos.

@@ -88,13 +88,13 @@ public class DBManager {
 			statement.setString(2, firstName);			
 			statement.setString(3, lastName);
 			statement.setString(4, userName);
-			statement.executeUpdate();//Ejecutamos la sentencia.
-			return true;
+			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
-			return false;
-		}	  		 		  
+			return false;//en caso de excepcion devolvemos falso.
+		}	  
+		  return true;//En caso de llegar aqui la sentencia se ejecuto sin problemas devolvemos true.
 	  }
 	  /**
 	   * Metodo encargado de borrar al usuario de la tabla de usuarios de la base de datos.
@@ -106,13 +106,13 @@ public class DBManager {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.DELETE_USER_FROM_TABLE);//Recogemos el PreparedSt...
 			//Asignamos el parametro de la sentencia.
 			statement.setInt(1, userId);
-			statement.executeUpdate();//Ejecutamos la sentencia.
-			return true;
+			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
-			return false;
-		}	 
+			return false;//en caso de excepcion devolvemos falso.
+		}
+		  return true;//En caso de llegar aqui la sentencia se ejecuto sin problemas devolvemos true.
 	  }
 	  /**
 	   * Metodo encargado de devolver el nombre y segundo nombre del usuario concatenados.
@@ -134,7 +134,7 @@ public class DBManager {
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
-			return null;
+			return null;//en caso de excepcion devolvemos nulo.
 		} 
 		  return userName;
 	  }
@@ -189,39 +189,96 @@ public class DBManager {
 				return false;
 			}		  		  
 	  }
-	  /**
-	   * Metodo encargado de insertar los datos de la encuesta en la base de datos.
-	   * @param userId identificador del usuario.
-	   * @param question pregunta de la encuesta.
-	   * @param answers respuestas de la encuesta.
-	   * @param answerScore puntuaciones de la encuesta.
-	   * @return true si la sentencia es ejecutada correctamente.
-	   */
-	  public boolean insertSurvey (Integer userId, String question, String [] answers, Integer [] answerScore){
+	 /**
+	  * Metodo encargado de insertar los datos de la encuesta en la base de datos.
+	  * @param userId Identificador del usuario creador de la encuesta.
+	  * @param survey Encuesta a insertar en la base de datos.
+	  * @return true si la sentencia es ejecutada con exito.
+	  */
+	  public boolean insertSurvey (Integer userId, Survey survey ){
+		  //Recogemos los datos de la encuesta para insertarla.
+		  String question = survey.getQuestion();
+		  ArrayList <String> answers = survey.getAnswers();
+		  ArrayList <Integer> answerScore = survey.getValues();
+		  Integer peopleVoted = survey.getPeopleVoted();
+		  Integer answerOptions = survey.getAnswerOptions();
+		  String inlineMsgId = survey.getInlineMsgId();
+		  String inlineQueryResultArticleId = survey.getInlineQueryResultArticleId();
+		  String surveyText = survey.getSurveyText();
+		  //Variables auxiliares.
 		  String answersToDb = "";
 		  String scoreToDb = "";
 		  String dot = ".";
 		  for (String answer: answers){
 			  answersToDb = answersToDb.concat(answer).concat(dot);//Añadimos al String la pregunta y un punto de separacion como marca.
-		  }
-		  for (int i =0; i <answerScore.length;i++){
-			  String aux ="";//Declaramos el auxiliar y lo rellenamos con la puntuacion.			  
-			  aux = answerScore[i].toString();
-			  scoreToDb = scoreToDb.concat(aux).concat(dot);//Concatenamos y marcamos con un punto para despues conocer las puntuaciones.					  
-		  }
+		  }		  
+		  for (Integer score : answerScore){
+			  String aux = "";//Declaramos el auxiliar y lo rellenamos con la puntuacion.
+			  aux = score.toString();
+			  scoreToDb = scoreToDb.concat(aux).concat(dot);//Concatenamos y marcamos con un punto para despues conocer las puntuaciones.
+		  }		  
 		  try {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.INSERT_SURVEY);
-			statement.setInt(2, userId);//Empieza en 2 el parametro por el surveyId autoincrement.
-			statement.setString(3, question);//Pregunta
-			statement.setString(4, answersToDb);//Respuestas
-			statement.setString(5, scoreToDb);//Puntuaciones.
-			statement.executeUpdate();//Ejecutamos la sentencia.
-			return true;
+			statement.setInt(1, userId);
+			statement.setString(2, question);//Pregunta
+			statement.setString(3, answersToDb);//Respuestas
+			statement.setString(4, scoreToDb);//Puntuaciones.
+			statement.setInt(5, peopleVoted);//Gente que ha votado.
+			statement.setInt(6, answerOptions);//Opciones de respuesta.
+			statement.setString(7, inlineMsgId);//Id del mensaje donde se ha realizado la votacion.
+			statement.setString(8, inlineQueryResultArticleId);//Id del articulo en la lista de articulos.
+			statement.setString(9, surveyText);//Texto final de la encuesta.
+			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
-			return false;
-		}		  
+			return false;//en caso de excepcion devolvemos falso.
+		}
+		  return true;//En caso de llegar aqui la sentencia se ejecuto sin problemas devolvemos true.
+	  }
+	  /**
+	   * Metodo encargado de actualizar los resultados de la encuesta en la base de datos sobre la encuesta dada por parametro.
+	   * @param userId Identificador del usuario.
+	   * @param survey Encuesta a actualizar.
+	   * @return true en caso de que la sentencia se ejecute satisfactoriamente.
+	   */
+	  public boolean updateSurvey (Integer userId, Survey survey){
+		//Recogemos los datos de la encuesta para insertarla.
+		  String question = survey.getQuestion();
+		  ArrayList <String> answers = survey.getAnswers();
+		  ArrayList <Integer> answerScore = survey.getValues();
+		  Integer peopleVoted = survey.getPeopleVoted();
+		  Integer answerOptions = survey.getAnswerOptions();		  
+		  String inlineQueryResultArticleId = survey.getInlineQueryResultArticleId();
+		  String surveyText = survey.getSurveyText();
+		  //Variables auxiliares.
+		  String answersToDb = "";
+		  String scoreToDb = "";
+		  String dot = ".";
+		  for (String answer: answers){
+			  answersToDb = answersToDb.concat(answer).concat(dot);//Añadimos al String la pregunta y un punto de separacion como marca.
+		  }		  
+		  for (Integer score : answerScore){
+			  String aux = "";//Declaramos el auxiliar y lo rellenamos con la puntuacion.
+			  aux = score.toString();
+			  scoreToDb = scoreToDb.concat(aux).concat(dot);//Concatenamos y marcamos con un punto para despues conocer las puntuaciones.
+		  }		  
+		  try {
+			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.UPDATE_SURVEY);
+			statement.setString(1, question);//Pregunta.
+			statement.setString(2, answersToDb);//Respuestas
+			statement.setString(3, scoreToDb);//Puntuacion
+			statement.setInt(4, peopleVoted);//Conteo de personas que han votado.
+			statement.setInt(5, answerOptions);//Opciones de respuesta.
+			statement.setString(6, surveyText);//Texto de la encuesta completo (con marcas etc).
+			statement.setInt(7, userId);//Id del usuario.
+			statement.setString(8, inlineQueryResultArticleId);//Id unico de la encuesta!!
+		} catch (SQLException e) {
+			BotLogger.error(LOGTAG, e);
+			e.printStackTrace();
+			return false;//en caso de excepcion devolvemos falso.
+		}
+		  return true;//En caso de llegar aqui la sentencia se ejecuto sin problemas devolvemos true.
 	  }
 	  /**
 	   * Metodo encargado de borrar de la base de datos las encuestas relacionadas con el usuario.
@@ -232,13 +289,13 @@ public class DBManager {
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.DELETE_SURVEYS);//Recogemos el PreparedSt...
 			statement.setInt(1, userId);
-			statement.executeUpdate();//Ejecutamos la sentencia.
-			return true;
+			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
-			return false;
+			return false;//en caso de excepcion devolvemos falso.
 		}		
+		return true;//En caso de llegar aqui la sentencia se ejecuto sin problemas devolvemos true.
 	}
 	/**
 	 * Metodo encargado de recoger los datos de las encuestas en la base de datos
@@ -246,26 +303,32 @@ public class DBManager {
 	 * @param userId identificador del usuario.
 	 * @return List<Survey> con todas las encuestas realizadas por el usuario.
 	 */
-	public List<Survey> getSurveysFromDb(Integer userId){
-		List <Survey> surveys = new ArrayList <Survey>();//Declaramos la lista de Objetos encuesta.
+	public ArrayList<Survey> getSurveysFromDb(Integer userId){
+		final String mark = "\\.";
+		ArrayList <Survey> surveys = new ArrayList <Survey>();//Declaramos la lista de Objetos encuesta.
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.READ_SURVEY);//Recogemos el PreparedSt...
+			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.READ_SURVEY);//Recogemos el PreparedSt...			
 			statement.setInt(1, userId);//Asignamos parametro y ejecutamos consulta.
 			ResultSet result = statement.executeQuery();			
-			while (result.next()){//Mientras haya resultados...
+			while (result.next()){//Mientras haya resultados...				
 				Survey survey = new Survey();//Creamos un objeto encuesta a rellenar.
 				survey.setQuestion(result.getString("question"));//Asignamos la pregunta recogiendola del ResultSet.
-				String answers = result.getString("answers");//Recogemos las respuestas.
-				String [] splitAnswers = answers.split(".");//Recortamos los resultados segun la marca.
-				for (int i =0; i < splitAnswers.length;i++){
+				String answers = result.getString("answers");//Recogemos las respuestas.				
+				String [] splitAnswers = answers.split(mark);//Recortamos los resultados segun la marca.				
+				for (int i =0; i < splitAnswers.length;i++){					
 					survey.setAnswers(splitAnswers[i]);//Añadimos al objeto encuesta.
 				}
 				//Metodo en Survey para quitar los puntos y devolver un array de Integer limpio.
 				Integer [] scores = survey.parseScoresToInteger(result.getString("score"));//Parseamos los resultados
 				for (int i =0; i < scores.length;i++){
-					survey.increaseScore(scores[i]);//Los añadimos al objeto encuesta.
+					survey.addScore(scores[i]);//Los añadimos al objeto encuesta.
 				}
-				surveys.add(survey);//Añadimos el objeto encuesta a la lista de encuestas.
+				survey.setPeopleVoted(result.getInt("peopleVoted"));//Asignamos personas que votaron.
+				survey.setAnswerOptions(result.getInt("answerOptions"));//La cantidad de respuestas de la encuesta.
+				survey.setInlineMsgId(result.getString("inlineMsgId"));//El Id del mensaje donde estaba la encuesta en activo.
+				survey.setInlineQueryResultArticleId(result.getString("inlineQueryResultArticleId"));//Id del articulo para compartir las encuestas con la lista.
+				survey.setSurveyText(result.getString("surveyText"));//Texto final de la encuesta.
+				surveys.add(survey);//Añadimos el objeto encuesta a la lista de encuestas.				
 			}			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);

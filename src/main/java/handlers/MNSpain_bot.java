@@ -1,7 +1,6 @@
 package handlers;
 
 
-
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -33,7 +32,7 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 	 * Metodo encargado de gestionar y derivar las actualizaciones que le llegan al bot.
 	 */
 	@Override
-	public void onUpdateReceived(Update update) {			
+	public void onUpdateReceived(Update update) {	
 		if (update.hasMessage() && update.getMessage().isCommand()){//Si es un comando...
 			handleCommand(update);
 		} else if(update.hasMessage() && update.getMessage().hasText()){//Si es un mensaje...

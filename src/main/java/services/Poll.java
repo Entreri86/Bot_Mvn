@@ -4,6 +4,10 @@ package services;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -17,23 +21,24 @@ import bot.BotConfig;
 import database.DBManager;
 
 
-public class Poll {		
-	private int pollID;//Id de la encuesta.
+public class Poll {	
 	private User user;
+	private boolean isInBd;//Bool para controlar si se ha insertado en la BD la encuesta.
+	private boolean isBackingUp;
 	public static final String parseMode = "HTML";//Parseo HTML	
 	private Survey oSurvey;//Objeto que representa una encuesta unica.
 	private HashMap <Integer, List<Survey>> userSurveyList;
-	private HashMap <Integer, List<InlineQueryResult>> userSurveyResultArticlelist;	
+	private HashMap <Integer, List<InlineQueryResult>> userSurveyResultArticlelist;
+	private PersistentValues persistentValues;
 	/**
 	 * 
 	 * 
 	 */
-	public Poll (){		
-		pollID = 1;
+	public Poll (){				
 		oSurvey = new Survey();		
 		userSurveyList = new HashMap<>();
 		//List <Survey> surveyList = new ArrayList <Survey>();
-		userSurveyResultArticlelist = new HashMap<>();
+		userSurveyResultArticlelist = new HashMap<>();		
 	}
 	/**
 	 * 
@@ -41,22 +46,28 @@ public class Poll {
 	 */
 	public Poll (User user, boolean bool){
 		this.user = user;
-		if (bool){//Si true, esta en la bd recogemos datos...
-			pollID = 1;
+		isInBd = false;//TODO: Puede dar problemas con la BD si ya esta adentro, PROVISIONAL!!!
+		isBackingUp = false;
+		persistentValues = new PersistentValues();		
+		if (bool){//Si true, esta en la bd recogemos datos...			
 			userSurveyList = new HashMap<>();//Declaramos HashMap de lista de Encuestas por usuario.
-			List <Survey> surveysList = DBManager.getInstance().getSurveysFromDb(user.getId());//Creamos una lista recogiendo los datos de la BD.
-			userSurveyList.put(user.getId(), surveysList);//La añadimos al HashMap.
+			ArrayList <Survey> surveysList = DBManager.getInstance().getSurveysFromDb(user.getId());//Creamos una lista recogiendo los datos de la BD.			
+			userSurveyList.put(user.getId(), surveysList);//La añadimos al HashMap.			
 			oSurvey = new Survey();//Declaramos clase nueva.
 			userSurveyResultArticlelist = new HashMap<>();//Declaramos HashMap con lista de articulos (encuestas) que compartir por el server de telegram.
 			List <InlineQueryResult> list = convertToResultArticle(surveysList);//Convertimos la lista de Survey en lista de articulos para compartir.
 			userSurveyResultArticlelist.put(user.getId(), list);//Añadimos la lista al HashMap.
 		} else {//en caso contrario creamos listas nuevas.
-			
-		}
-		
-		
+			userSurveyList = new HashMap<>();//Declaramos HashMap de lista de Encuestas por usuario.
+			List <Survey> surveysList = new ArrayList<>();//Creamos un nuevo ArrayList para alojar en el HashMap las Encuestas.
+			userSurveyList.put(user.getId(), surveysList);//La añadimos al HashMap.
+			oSurvey = new Survey();//Declaramos clase nueva.
+			userSurveyResultArticlelist = new HashMap<>();//Declaramos HashMap con lista de articulos (encuestas) que compartir por el server de telegram.
+			List <InlineQueryResult> list = new ArrayList<>();//Creamos un nuevo ArrayList para alojar en el HashMap las Encuestas en formato InlineQueryResultArticle...
+			userSurveyResultArticlelist.put(user.getId(), list);//Añadimos la lista al HashMap.
+		}			
 	}
-	//TODO: Crear un constructor donde se le pase un booleano para controlar si esta en la bd o no para recrear listas y demas.
+	
 	/**
 	 * Metodo encargado de aumentar la votacion dada.
 	 * @param position posicion donde aumentar la puntuacion de voto.
@@ -225,9 +236,11 @@ public class Poll {
 		article.setInputMessageContent(surveyText());//Asignamos el texto de la encuesta.
 		article.setReplyMarkup(this.oSurvey.createKeyboard());//Asignamos el teclado de la encuesta.
 		article.setTitle(oSurvey.getQuestion());//El titulo de la encuesta, que se mostrara en la lista.
-		this.oSurvey.setInlineQueryResultArticleId("Encuesta"+pollID);//Guardamos el Id de la encuesta en la clase por si hay que restaurar.
-		article.setId("Encuesta"+pollID);//Id de la encuesta.
-		pollID = pollID + 1;//Aumentamos el contador del Id de la encuesta.
+		Integer inlineQueryResultArticleId = persistentValues.getIdValue();//Recogemos del fichero el id que toca.
+		this.oSurvey.setInlineQueryResultArticleId("Encuesta"+inlineQueryResultArticleId);//Guardamos el Id de la encuesta en la clase por si hay que restaurar.
+		article.setId("Encuesta"+inlineQueryResultArticleId);//Id de la encuesta.
+		inlineQueryResultArticleId += 1;//Aumentamos el contador del Id de la encuesta.
+		persistentValues.saveIdValue(inlineQueryResultArticleId);//Guardamos el siguiente id a asignar.
 		return article;
 	}
 	/**
@@ -243,6 +256,15 @@ public class Poll {
 		list.add(article);//Añadimos a la lista
 		userSurveyResultArticlelist.put(userId, list);//Y la lista al HashMap del usuario.
 		answerInlineQuery.setResults(list);//Rellenamos la consulta con el resultado.		
+		if (isInBd){//Si ya esta en la BD la encuesta....
+			if (!isBackingUp){//Si no se ha iniciado la tarea del BackUp...
+				startBackUp();//Empezamos a hacer el backUp
+				isBackingUp = true;//Marcamos para que no abra mas hilos que uno (por si comparte la misma encuesta varias veces.
+			}			
+		} else {//Si no lo esta...
+			DBManager.getInstance().insertSurvey(userId, oSurvey);//La insertamos en la BD.
+			isInBd = true;//Reflejamos que ya esta en la bd.
+		}		
 		return answerInlineQuery;
 	}
 	/**
@@ -259,9 +281,10 @@ public class Poll {
 		return acq;
 	}	
 	/**
-	 * 
-	 * @param surveysList
-	 * @return
+	 * Metodo encargado de transformar una lista de objetos Survey en objetos InlineQueryResultArticle
+	 * para compartirla despues con el boton del chat privado.
+	 * @param surveysList Lista de objetos Survey.
+	 * @return List de objetos InlineQueryResultArticle.
 	 */
 	private List<InlineQueryResult> convertToResultArticle(List <Survey> surveysList){
 		List <InlineQueryResult> articlesList = new ArrayList <InlineQueryResult>();
@@ -291,5 +314,30 @@ public class Poll {
 			return false;
 		}		
 	}
+	/**
+	 * Metodo que crea un nuevo hilo por cada objeto Survey creado para mantener actualizada la encuesta y sus resultados
+	 * en la base de datos.
+	 */
+	private void startBackUp (){//TODO: Objeto service de clase para detenerlo??
+		BackUpSurvey command = new BackUpSurvey();//Creamos el "comando" que realizara el BackUp 
+		ScheduledExecutorService service = Executors.newScheduledThreadPool(1);//Con un solo hilo bastaria.
+		System.out.println("Se esta respaldando en hilo secundario...");
+		service.scheduleAtFixedRate(command, 1, 3, TimeUnit.HOURS);//Que cada tres horas haga un backUp con un retardo de 1 hora el inicial.		
+	}
+	/**
+	 * Clase privada que implementa Runnable y se encarga de la tarea de actualizacion de valores de la tabla SurveysTable.
+	 * @author otalf
+	 *
+	 */
+	private final class BackUpSurvey implements Runnable {
+	   /**
+	    * Metodo encargado de ejecutar la actualizacion de la tabla SurveysTable en la Base de datos.
+	    */
+	   @Override	   
+       public void run() {		   
+		   DBManager.getInstance().updateSurvey(user.getId(), oSurvey);//Actualizamos la encuesta.
+       }
+	}
+	
 	
 }
