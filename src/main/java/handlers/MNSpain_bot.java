@@ -22,8 +22,7 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 	private boolean haveQuestion = false;//Si hay que controlar la pregunta...
 	private boolean sendSurvey = false;//Si se a enviado la encuesta al chat privado...
 	private boolean isClosed = false;//Si esta o no cerrada la encuesta...
-	private boolean isUpdated = false;//Si se ha actualizado la encuesta previamente en el chat privado...
-	
+	private boolean isUpdated = false;//Si se ha actualizado la encuesta previamente en el chat privado...	
 	
 	public MNSpain_bot() {
 		
@@ -61,7 +60,8 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 		switch (command){
 		case BotConfig.START_COMMAND:			
 			if(DBManager.getInstance().isUserOnDb(userId)){//Si el usuario esta en la Base de datos...				
-				message.setText(BotConfig.WELCOME_AGAIN_STRING+DBManager.getInstance().getUserFromDb(userId)+ BotConfig.WELCOME_AGAIN_STRING_SECOND);				
+				message.setText(BotConfig.WELCOME_AGAIN_STRING+DBManager.getInstance().getUserFromDb(userId)+ BotConfig.WELCOME_AGAIN_STRING_SECOND);
+				  
 			} else {//Si el usuario no esta en la BD...
 				DBManager.getInstance().insertUserOnDb(update.getMessage().getFrom());//Insertamos el usuario en la BD.
 				message.setText(BotConfig.WELCOME_STRING);
@@ -70,7 +70,7 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 		case BotConfig.HELP_COMMAND:			
 			message.setText(BotConfig.HELP_STRING);
 			break;
-		case BotConfig.POLL_COMMAND:
+		case BotConfig.POLL_COMMAND://FIXME: Controlar la segunda pulsacion al comando. Poll = null;
 			if (DBManager.getInstance().checkIfHaveSurveys(userId)){//Si el usuario tiene encuestas en la base de datos...
 				System.out.println("Tiene encuestas.");
 				poll = new Poll(update.getMessage().getFrom(), true);//Le pasamos el usuario con bool true para que recoja los datos de la BD.

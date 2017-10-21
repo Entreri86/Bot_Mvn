@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -19,6 +18,7 @@ import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResul
 import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResultArticle;
 import bot.BotConfig;
 import database.DBManager;
+import bot.PersistentValues;
 
 
 public class Poll {	
@@ -27,8 +27,8 @@ public class Poll {
 	private boolean isBackingUp;
 	public static final String parseMode = "HTML";//Parseo HTML	
 	private Survey oSurvey;//Objeto que representa una encuesta unica.
-	private HashMap <Integer, List<Survey>> userSurveyList;
-	private HashMap <Integer, List<InlineQueryResult>> userSurveyResultArticlelist;
+	private HashMap <Integer, List<Survey>> userSurveyList;//HashMap con lista de encuestas por usuario.
+	private HashMap <Integer, List<InlineQueryResult>> userSurveyResultArticlelist;//HashMap con lista de articulos por usuario.
 	private PersistentValues persistentValues;
 	/**
 	 * 
@@ -275,8 +275,7 @@ public class Poll {
 	 */
 	public AnswerCallbackQuery replyVote (String callBackId, String text){
 		AnswerCallbackQuery acq = new AnswerCallbackQuery();
-		acq.setCallbackQueryId(callBackId);
-		acq.setShowAlert(true);		
+		acq.setCallbackQueryId(callBackId);						
 		acq.setText(text);
 		return acq;
 	}	
@@ -318,7 +317,7 @@ public class Poll {
 	 * Metodo que crea un nuevo hilo por cada objeto Survey creado para mantener actualizada la encuesta y sus resultados
 	 * en la base de datos.
 	 */
-	private void startBackUp (){//TODO: Objeto service de clase para detenerlo??
+	private void startBackUp (){//FIXME: Objeto service de clase para detenerlo??
 		BackUpSurvey command = new BackUpSurvey();//Creamos el "comando" que realizara el BackUp 
 		ScheduledExecutorService service = Executors.newScheduledThreadPool(1);//Con un solo hilo bastaria.
 		System.out.println("Se esta respaldando en hilo secundario...");

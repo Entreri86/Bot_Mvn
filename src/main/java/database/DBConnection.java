@@ -57,8 +57,7 @@ public class DBConnection {
 	 */
 	public ResultSet runSqlQuery (String query) throws SQLException{
 		final Statement statement;
-		statement = this.currentConnection.createStatement();
-		//TODO: Comprobar los parametros para SQL Inyection.
+		statement = this.currentConnection.createStatement();		
 		return statement.executeQuery(query);
 	}
 	

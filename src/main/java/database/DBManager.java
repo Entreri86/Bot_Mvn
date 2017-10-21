@@ -64,6 +64,8 @@ public class DBManager {
 		try {
 			connection.executeQuery(DataBaseStrings.CREATE_USERS_TABLE);//Creamos la tabla de usuarios por si no estaba creada.
 			connection.executeQuery(DataBaseStrings.CREATE_SURVEY_TABLE);//Creamos la tabla de encuestas por si no estaba creada.
+			connection.executeQuery(DataBaseStrings.CREATE_FEED_TABLE);//Creamos la tabla de Feeds si no estaba creada.
+			connection.executeQuery(DataBaseStrings.CREATE_FEED_SUSCRIBERS_TABLE);//Creamos la tabla de feedSuscriber si no estaba creada.			
 			isCreated = true;//Marcamos como creadas.
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
@@ -242,7 +244,7 @@ public class DBManager {
 	   * @return true en caso de que la sentencia se ejecute satisfactoriamente.
 	   */
 	  public boolean updateSurvey (Integer userId, Survey survey){
-		//Recogemos los datos de la encuesta para insertarla.
+		  //Recogemos los datos de la encuesta para insertarla.
 		  String question = survey.getQuestion();
 		  ArrayList <String> answers = survey.getAnswers();
 		  ArrayList <Integer> answerScore = survey.getValues();
@@ -336,5 +338,5 @@ public class DBManager {
 		return surveys;
 	}
 	
-	
+	//TODO: CREACION DE METODOS CRUD de las tablas del Feed!! 
 }
