@@ -7,6 +7,7 @@ import java.util.logging.Level;
 
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
+import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 import org.telegram.telegrambots.logging.BotLogger;
 import org.telegram.telegrambots.logging.BotsFileHandler;
@@ -18,6 +19,8 @@ public class Main {
 
 	public static void main(String[] args) {
 		
+		 DefaultBotOptions options = new DefaultBotOptions();
+		 options.setMaxThreads(BotConfig.THREADS);//Asignamos 30 hilos para atender usuarios.		
 		 //Iniciamos el Log para controlar los errores que puedan aparecer.	
 		 BotLogger.setLevel(Level.ALL);
 		 BotLogger.registerLogger(new ConsoleHandler());
@@ -30,7 +33,7 @@ public class Main {
 			 ApiContextInitializer.init();
 			 TelegramBotsApi botsApi = new TelegramBotsApi();			 
 			 try {
-		            botsApi.registerBot(new MNSpain_bot());
+		            botsApi.registerBot(new MNSpain_bot(options));
 		     } catch (TelegramApiException e) {
 		    	 	BotLogger.error(LOGTAG, e);//Guardamos mensaje y lo mostramos en pantalla de la consola.
 		            e.printStackTrace();

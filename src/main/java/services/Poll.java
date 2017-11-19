@@ -239,7 +239,7 @@ public class Poll {
 		Integer inlineQueryResultArticleId = persistentValues.getIdValue();//Recogemos del fichero el id que toca.
 		this.oSurvey.setInlineQueryResultArticleId("Encuesta"+inlineQueryResultArticleId);//Guardamos el Id de la encuesta en la clase por si hay que restaurar.
 		article.setId("Encuesta"+inlineQueryResultArticleId);//Id de la encuesta.
-		inlineQueryResultArticleId += 1;//Aumentamos el contador del Id de la encuesta.
+		inlineQueryResultArticleId += +1;//Aumentamos el contador del Id de la encuesta.
 		persistentValues.saveIdValue(inlineQueryResultArticleId);//Guardamos el siguiente id a asignar.
 		return article;
 	}

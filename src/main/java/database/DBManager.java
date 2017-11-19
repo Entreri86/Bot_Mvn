@@ -75,9 +75,11 @@ public class DBManager {
 	  /**
 	   * Metodo encargado de insertar un usuario en la base de datos.
 	   * @param user Usuario a introducir en la tabla de usuarios.
+	   * @param hash hash para aumentar ilegibilidad de la contraseña.
+	   * @param salt salt para aumentar la ilegibilidad de la contraseña.
 	   * @return true si se ha podido llevar a cabo la sentencia.
 	   */
-	  public boolean insertUserOnDb (User user){
+	  public boolean insertUserOnDb (User user, String hash,String salt){
 		  Integer userId = user.getId();
 		  String firstName = user.getFirstName();
 		  String lastName = user.getLastName();
@@ -89,6 +91,8 @@ public class DBManager {
 			statement.setString(2, firstName);			
 			statement.setString(3, lastName);
 			statement.setString(4, userName);
+			statement.setString(5, hash);
+			statement.setString(6, salt);
 			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
@@ -120,24 +124,23 @@ public class DBManager {
 	   * @param userId identificador del usuario a buscar.
 	   * @return String concatenado del usuario con su nombre y segundo nombre.
 	   */
-	  public String getUserFromDb (Integer userId){
-		  String userName = ""; 
+	  public String [] checkUserCredential (Integer userId){		  
+		  String [] hashSalt = new String [2];
 		  try {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.READ_USERS_TABLE);
 			statement.setInt(1, userId);
 			ResultSet result = statement.executeQuery();
 			if (!result.next()){//Si no hay ningun resultado es que es nulo.
 				return null;
-			}
-			String firstName = result.getString("firstName");
-			String lastName = result.getString("lastName");
-			userName = userName.concat(firstName).concat(" ").concat(lastName);			
+			}			
+			hashSalt [0] = result.getString("hash");
+			hashSalt [1] = result.getString("salt");					
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
 			return null;//en caso de excepcion devolvemos nulo.
 		} 
-		  return userName;
+		  return hashSalt;
 	  }
 	  /**
 	   * Metodo encargado de comprobar si el usuario dado por parametro esta insertado en la base de datos.
@@ -179,7 +182,7 @@ public class DBManager {
 			if (!result.next()){//Si no hay ningun resultado es que es nulo.				
 				return false;
 			}
-			id = result.getInt("userId");//En otro caso cogemos el id.
+			id = result.getInt("userSurveyId");//En otro caso cogemos el id.
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
@@ -203,7 +206,8 @@ public class DBManager {
 		  ArrayList <Integer> answerScore = survey.getValues();
 		  Integer peopleVoted = survey.getPeopleVoted();
 		  Integer answerOptions = survey.getAnswerOptions();
-		  String inlineMsgId = survey.getInlineMsgId();
+		  //String inlineMsgId = survey.getInlineMsgId();
+		  
 		  String inlineQueryResultArticleId = survey.getInlineQueryResultArticleId();
 		  String surveyText = survey.getSurveyText();
 		  //Variables auxiliares.
@@ -220,15 +224,15 @@ public class DBManager {
 		  }		  
 		  try {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.INSERT_SURVEY);
-			statement.setInt(1, userId);
-			statement.setString(2, question);//Pregunta
-			statement.setString(3, answersToDb);//Respuestas
-			statement.setString(4, scoreToDb);//Puntuaciones.
-			statement.setInt(5, peopleVoted);//Gente que ha votado.
-			statement.setInt(6, answerOptions);//Opciones de respuesta.
-			statement.setString(7, inlineMsgId);//Id del mensaje donde se ha realizado la votacion.
-			statement.setString(8, inlineQueryResultArticleId);//Id del articulo en la lista de articulos.
-			statement.setString(9, surveyText);//Texto final de la encuesta.
+			statement.setString(1, inlineQueryResultArticleId);//Id del articulo en la lista de articulos.
+			statement.setInt(2, userId);//Id Usuario.
+			statement.setString(3, question);//Pregunta
+			statement.setString(4, answersToDb);//Respuestas
+			statement.setString(5, scoreToDb);//Puntuaciones.
+			statement.setInt(6, peopleVoted);//Gente que ha votado.
+			statement.setInt(7, answerOptions);//Opciones de respuesta.				
+			statement.setString(8, surveyText);//Texto final de la encuesta.
+			//statement.setString(9, inlineMsgId);//Id del mensaje donde se ha realizado la votacion.
 			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
@@ -249,7 +253,8 @@ public class DBManager {
 		  ArrayList <String> answers = survey.getAnswers();
 		  ArrayList <Integer> answerScore = survey.getValues();
 		  Integer peopleVoted = survey.getPeopleVoted();
-		  Integer answerOptions = survey.getAnswerOptions();		  
+		  Integer answerOptions = survey.getAnswerOptions();
+		  String inlineMessageId = survey.getInlineMsgId();
 		  String inlineQueryResultArticleId = survey.getInlineQueryResultArticleId();
 		  String surveyText = survey.getSurveyText();
 		  //Variables auxiliares.
@@ -272,8 +277,9 @@ public class DBManager {
 			statement.setInt(4, peopleVoted);//Conteo de personas que han votado.
 			statement.setInt(5, answerOptions);//Opciones de respuesta.
 			statement.setString(6, surveyText);//Texto de la encuesta completo (con marcas etc).
-			statement.setInt(7, userId);//Id del usuario.
-			statement.setString(8, inlineQueryResultArticleId);//Id unico de la encuesta!!
+			statement.setString(7, inlineMessageId);//Id del mensaje de la encuesta.
+			statement.setInt(8, userId);//Id del usuario.
+			statement.setString(9, inlineQueryResultArticleId);//Id unico de la encuesta!!
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
@@ -282,7 +288,7 @@ public class DBManager {
 		  return true;//En caso de llegar aqui la sentencia se ejecuto sin problemas devolvemos true.
 	  }
 	  /**
-	   * Metodo encargado de borrar de la base de datos las encuestas relacionadas con el usuario.
+	   * Metodo encargado de borrar de la base de datos la encuesta selecionada por el usuario.
 	   * @param user identificador del usuario.
 	   * @return true si se logra ejecutar la sentencia.
 	   */
@@ -313,6 +319,7 @@ public class DBManager {
 			ResultSet result = statement.executeQuery();			
 			while (result.next()){//Mientras haya resultados...				
 				Survey survey = new Survey();//Creamos un objeto encuesta a rellenar.
+				survey.setInlineQueryResultArticleId(result.getString("inlineQueryResultArticleId"));//Id unica del articulo encuesta para compartir las encuestas con la lista.
 				survey.setQuestion(result.getString("question"));//Asignamos la pregunta recogiendola del ResultSet.
 				String answers = result.getString("answers");//Recogemos las respuestas.				
 				String [] splitAnswers = answers.split(mark);//Recortamos los resultados segun la marca.				
@@ -325,10 +332,9 @@ public class DBManager {
 					survey.addScore(scores[i]);//Los añadimos al objeto encuesta.
 				}
 				survey.setPeopleVoted(result.getInt("peopleVoted"));//Asignamos personas que votaron.
-				survey.setAnswerOptions(result.getInt("answerOptions"));//La cantidad de respuestas de la encuesta.
-				survey.setInlineMsgId(result.getString("inlineMsgId"));//El Id del mensaje donde estaba la encuesta en activo.
-				survey.setInlineQueryResultArticleId(result.getString("inlineQueryResultArticleId"));//Id del articulo para compartir las encuestas con la lista.
+				survey.setAnswerOptions(result.getInt("answerOptions"));//La cantidad de respuestas de la encuesta.								
 				survey.setSurveyText(result.getString("surveyText"));//Texto final de la encuesta.
+				survey.setInlineMsgId(result.getString("inlineMsgId"));//El Id del mensaje donde estaba la encuesta en activo.
 				surveys.add(survey);//Añadimos el objeto encuesta a la lista de encuestas.				
 			}			
 		} catch (SQLException e) {

@@ -8,11 +8,12 @@ public class DataBaseStrings {
 			 										+" firstName VARCHAR(30) NULL,"
 			 										+" lastName VARCHAR(30) NULL,"
 			 										+" userName VARCHAR(30) NULL,"
-			 										+" userCredential VARCHAR(100) NOT NULL,"
+			 										+" hash VARCHAR(50) NOT NULL,"
+			 										+" salt VARCHAR(50) NOT NULL,"
 			 										+" PRIMARY KEY (userId))"
 			 										+" ENGINE = InnoDB;";			
 	//Sentencia de insert en la tabla de los usuarios COMPROBADA Y OK.
-	public static final String INSERT_USERS_TABLE = "INSERT INTO users (userId, firstName, lastName, userName) VALUES (?, ?, ?, ?);";
+	public static final String INSERT_USERS_TABLE = "INSERT INTO users (userId, firstName, lastName, userName, hash, salt) VALUES (?, ?, ?, ?, ?, ?);";
 	//Sentencia de lectura de la tabla de los usuarios COMPROBADA Y OK.
 	public static final String READ_USERS_TABLE = "SELECT * FROM users WHERE userId = ? ;";
 	//Sentencia de eliminacion del usuario de la tabla de usuarios del bot COMPROBADA Y OK.
@@ -26,28 +27,27 @@ public class DataBaseStrings {
 												    +"answers VARCHAR(500) NULL,"
 												    +"score VARCHAR(100) NULL,"
 												    +"peopleVoted INT NULL,"
-												    +"answerOptions INT NULL,"
-												    +"inlineQueryResultArticleId VARCHAR(200) NOT NULL,"
+												    +"answerOptions INT NULL,"												   
 												    +"surveyText VARCHAR(500) NULL,"
-												    +"inlineMsgId VARCHAR(200) NOT NULL,"
+												    +"inlineMsgId VARCHAR(200) NULL,"
 												    +"PRIMARY KEY (surveyId),"
 												    +"INDEX userId_idx (userSurveyId ASC),"
 												    +"CONSTRAINT userId"
 												    +" FOREIGN KEY (userSurveyId)"
 												    +" REFERENCES mnspainbot.users (userId)"
-												    +"ON DELETE CASCADE"
+												    +"ON DELETE CASCADE "
 												    +"ON UPDATE CASCADE)"
 												    +"ENGINE = InnoDB;";
 	//Sentencia de insert en la tabla de las encuestas COMPROBADA Y OK.
-	public static final String INSERT_SURVEY = "INSERT INTO surveys (surveyId ,userSurveyId, question, answers, score, peopleVoted, answerOptions, inlineQueryResultArticleId, surveyText, inlineMsgId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+	public static final String INSERT_SURVEY = "INSERT INTO surveys (surveyId ,userSurveyId, question, answers, score, peopleVoted, answerOptions, surveyText) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 	//Sentencia de lectura de la tabla de encuestas COMPROBADA Y OK! EN MYSQL SE guarda un "." en vez de una ",".
 	public static final String READ_SURVEY = "SELECT question, answers, score, peopleVoted, answerOptions, inlineMsgId, inlineQueryResultArticleId, surveyText FROM surveys WHERE userId = ?;";
 	//Sentencia de eliminacion de la encuesta de la tabla de encuestas COMPROBADA Y OK.
 	public static final String DELETE_SURVEYS = "DELETE FROM surveys WHERE surveyId = ?;";//Antes borraba segun usuario, ahora borra encuesta unica.
-	//Sentencia de actualizacion de la encuesta en la tabla COMPROBADA Y OK!.//TODO: Quizas se tenga que actualizar UPDATE SURVEY.
-	public static final String UPDATE_SURVEY = "UPDATE surveys SET question = ?, answers = ?, score = ?, peopleVoted = ?, answerOptions = ?, surveyText = ? WHERE userId = ? AND inlineQueryResultArticleId = ?;";
+	//Sentencia de actualizacion de la encuesta en la tabla COMPROBADA Y OK!.
+	public static final String UPDATE_SURVEY = "UPDATE surveys SET question = ?, answers = ?, score = ?, peopleVoted = ?, answerOptions = ?, surveyText = ?, inlineMsgId = ? WHERE userSurveyId = ? AND inlineQueryResultArticleId = ?;";
 	//Sentencia de comprobacion de si hay encuestas en la BD con relacion al usuario COMPROBADA Y OK.
-	public static final String CHECK_SURVEYS = "SELECT * FROM surveys WHERE userId = ? ;";
+	public static final String CHECK_SURVEYS = "SELECT * FROM surveys WHERE userSurveyId = ? ;";
 	//Sentencia de creacion de la tabla de FEEDS RSS COMPROBADA Y OK!
 	public static final String CREATE_FEED_TABLE = "CREATE TABLE IF NOT EXISTS mnspainbot.rssFeeds ("
 													+"feedId INT NOT NULL AUTO_INCREMENT,"
@@ -79,10 +79,10 @@ public class DataBaseStrings {
 															   +"PRIMARY KEY (chatId),"
 															   +"INDEX feedId_idx (feedId ASC),"
 															   +"CONSTRAINT feedId"
-															     +"FOREIGN KEY (feedId)"
-															     +"REFERENCES mnspainbot.rssFeeds (feedId)"
-															     +"ON DELETE NO ACTION"
-															     +"ON UPDATE NO ACTION)"
+															     +" FOREIGN KEY (feedId)"
+															     +" REFERENCES mnspainbot.rssFeeds (feedId)"
+															     +" ON DELETE NO ACTION"
+															     +" ON UPDATE NO ACTION)"
 															   +"ENGINE = InnoDB;";
 	//Sentencia de lectura de la tabla feedSuscribers que recoge todos los chats que estan suscritos a un determinado feed, COMPROBADA Y OK!
 	public static final String READ_FEED_SUSCRIBER = "SELECT * FROM feedSuscribers WHERE feedId = ? ; ";

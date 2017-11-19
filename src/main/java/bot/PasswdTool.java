@@ -66,7 +66,7 @@ public class PasswdTool {
 		return false;
     }
     
-    class HashSalt {
+    public class HashSalt {
         private String hash;
         private String salt;
     	

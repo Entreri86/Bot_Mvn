@@ -434,7 +434,8 @@ public class Survey {
         	}        	
         	button.setCallbackData(callBack+i);//Marcamos el boton con la marca para conocer el boton pulsado.
         	rowInline.add(button);//Añadimos el boton a la lista.
-        	callBackDataList.remove(i);
+        	System.out.println("Posicion a remover del callBackData: "+callBackDataList.get(i).toString());
+        	callBackDataList.remove(i);        	
         	callBackDataList.add(i, callBack+i);        	
         	rowsInline.add(rowInline);//Añadimos la fila a la lista.
 		}
