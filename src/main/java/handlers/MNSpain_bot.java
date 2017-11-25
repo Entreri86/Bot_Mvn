@@ -1,8 +1,9 @@
 package handlers;
 
 
+import java.io.File;
 import java.util.HashMap;
-
+import org.telegram.telegrambots.api.methods.send.SendDocument;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.api.objects.Message;
@@ -29,13 +30,11 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 	private boolean haveQuestion = false;//Si hay que controlar la pregunta...
 	private boolean sendSurvey = false;//Si se a enviado la encuesta al chat privado...
 	private boolean isClosed = false;//Si esta o no cerrada la encuesta...
-	private boolean isUpdated = false;//Si se ha actualizado la encuesta previamente en el chat privado...	
-	private boolean isLogin = false;
-	private boolean havePasswd = false;
-	private String userPasswd;
-	private HashMap<Integer, Poll> pollMap;
-	private HashMap<Integer, CustomUser> usersMap;
-	
+	private boolean isUpdated = false;//Si se ha actualizado la encuesta previamente en el chat privado...
+	private boolean sendUserManual = false;//Si hay que enviar el manual de usuario....
+	private String userPasswd;//Variable para tratar la contraseña del usuario.
+	private HashMap<Integer, Poll> pollMap;//Mapeo del usuario con sus encuestas.
+	private HashMap<Integer, CustomUser> usersMap;//Mapeo del login de los usuarios.
 	/**
 	 * Constructor por defecto.
 	 */
@@ -48,31 +47,32 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 	 */
 	public MNSpain_bot(DefaultBotOptions options) {
 		super(options);//Le pasamos las opciones para disponer de 30 hilos escuchando (el maximo de la Api de telegram)
+		pollMap = new HashMap<>();//Iniciamos los maps.
+		usersMap = new HashMap<>();
 	}
 	/**
 	 * Metodo encargado de gestionar y derivar las actualizaciones que le llegan al bot.
 	 */
 	@Override
 	public void onUpdateReceived(Update update) {
-		
+		//Solicitamos la contraseña al usuario, en caso de no tener se la creamos y lo registramos en la base de datos.
 		if (registerUser(update)) {
-			
+			initUserPoll(update);//Comprobamos el usuario y lo insertamos en el hashmap.
+			if (update.hasMessage() && update.getMessage().isCommand()){//Si es un comando...
+				handleCommand(update);
+			} else if(update.hasMessage() && update.getMessage().hasText()){//Si es un mensaje...
+				handleMessage(update);
+			} else if (update.hasCallbackQuery()){//Si es una pulsacion de boton de un teclado...
+				try {				
+					handleCallbackQuery(update);
+				} catch (TelegramApiException e) {
+					BotLogger.error(LOGTAG, e);//Guardamos mensaje y lo mostramos en pantalla de la consola.
+					e.printStackTrace();
+				}
+			} else if (update.hasInlineQuery()){//Si es una consulta inline...
+				handleInlineQuery(update);
+			}				
 		} 
-		
-		if (update.hasMessage() && update.getMessage().isCommand()){//Si es un comando...
-			handleCommand(update);
-		} else if(update.hasMessage() && update.getMessage().hasText()){//Si es un mensaje...
-			handleMessage(update);
-		} else if (update.hasCallbackQuery()){//Si es una pulsacion de boton de un teclado...
-			try {				
-				handleCallbackQuery(update);
-			} catch (TelegramApiException e) {
-				BotLogger.error(LOGTAG, e);//Guardamos mensaje y lo mostramos en pantalla de la consola.
-				e.printStackTrace();
-			}
-		} else if (update.hasInlineQuery()){//Si es una consulta inline...
-			handleInlineQuery(update);
-		}		
 	}
 	
 	/**
@@ -84,53 +84,25 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 		SendMessage message= new SendMessage();//Declaramos un mensaje.		
 		Long chatId = update.getMessage().getChatId();//Recogemos el id del chat desde donde se interactua con el bot.
 		Integer userId = update.getMessage().getFrom().getId();//Y el id del usuario que interactua.
+		Poll poll = pollMap.get(userId);//Recogemos la instancia de Poll del usuario en cuestion.
+		
 		switch (command){
-		case BotConfig.START_COMMAND:
-			if (isLogin) {//Si ya ha entrado el pass...
-				message.setText(BotConfig.ALREADY_LOGIN_STRING + BotConfig.WELCOME_STRING);
-			} else {
-				if (havePasswd) {
-					message.setText(BotConfig.PASSWD_REQ_STRING);
-				} else {
-					if (DBManager.getInstance().isUserOnDb(update.getMessage().getFrom().getId())) {//Si esta en la BD...
-						message.setText(BotConfig.WELCOME_AGAIN_STRING);
-						havePasswd = true; //Marcamos que tiene la contraseña.
-					} else message.setText(BotConfig.CREATE_PASSWD_STRING);
-				}				
-			}						
+		case BotConfig.START_COMMAND:			
+			message.setText(BotConfig.WELCOME_STRING);						
 			break;
-		case BotConfig.HELP_COMMAND:
-			if (isLogin) {
-				message.setText(BotConfig.HELP_STRING);
-			} else {
-				message.setText(BotConfig.DENNIED_PERMISSIONS_STRING);
-			}			
+		case BotConfig.HELP_COMMAND:			
+			message.setText(BotConfig.HELP_STRING);
+			sendUserManual = true;				
 			break;
-		case BotConfig.POLL_COMMAND://FIXME: Controlar la segunda pulsacion al comando. Poll = null;
-			if (isLogin) {
-				if (DBManager.getInstance().checkIfHaveSurveys(userId)){//Si el usuario tiene encuestas en la base de datos...
-					System.out.println("Tiene encuestas.");
-					poll = new Poll(update.getMessage().getFrom(), true);//Le pasamos el usuario con bool true para que recoja los datos de la BD.
-				} else { //Si no tiene encuestas declaramos la clase vacia.
-					System.out.println("No tiene encuestas.");
-					poll = new Poll(update.getMessage().getFrom(), false);//Iniciamos la clase...Con bool false para que no recoja nada de la BD.
-				}
-				message.setText(BotConfig.POLL_STRING);			
-				isPolling = true;//"Encendemos" el modo encuesta.	
-			} else {
-				message.setText(BotConfig.DENNIED_PERMISSIONS_STRING);
-			}
+		case BotConfig.POLL_COMMAND:		
+			message.setText(BotConfig.POLL_STRING);			
+			isPolling = true;//"Encendemos" el modo encuesta.			
 			break;
-		case BotConfig.POLL_COMMAND_DONE:
-			if (isLogin) {
-				isPolling = false;//Reiniciamos la variable al finalizar el comando.
-				haveQuestion = false;//Reiniciamos la variable para la pregunta.
-				sendSurvey = true;//Marcamos para enviar la encuesta.				
-				message.setText(BotConfig.POLL_DONE_STRING);
-			} else {
-				message.setText(BotConfig.DENNIED_PERMISSIONS_STRING);
-			}
-			
+		case BotConfig.POLL_COMMAND_DONE:			
+			isPolling = false;//Reiniciamos la variable al finalizar el comando.
+			haveQuestion = false;//Reiniciamos la variable para la pregunta.
+			sendSurvey = true;//Marcamos para enviar la encuesta.				
+			message.setText(BotConfig.POLL_DONE_STRING);			
 			break;		
 		}		
 		try {			
@@ -140,6 +112,9 @@ public class MNSpain_bot extends TelegramLongPollingBot {
             	poll.createSurvey();//Creamos la encuesta 
             	execute(poll.sendFinishedSurvey(chatId, poll.createSurveyString()));//Enviamos encuesta antes de compartir.
             	sendSurvey = false;//Marcamos como no enviada despues de haberlo hecho.
+            } else if (sendUserManual) {//Si hay que enviar el Manual de usuario...            	
+            	sendDocument(sendUserManual(chatId));
+            	sendUserManual = false;//Marcamos como no enviado...
             }
         } catch (TelegramApiException e) {
         	BotLogger.error(LOGTAG, e);//Guardamos mensaje y lo mostramos en pantalla de la consola.
@@ -164,39 +139,7 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 				poll.setAnswers(message.getText());								
 				sendMessage.setText(BotConfig.POLL_ANSWER_STRING);
 			}			
-		} else if (!isLogin) {			
-			if (!havePasswd) {
-				if(message.getText().equalsIgnoreCase("Si")) {//Afirma que la contraseña es valida.
-					sendMessage.setText(BotConfig.PASSWD_CREATED_STRING);
-					havePasswd = true;//Marcamos que dispone de contraseña.
-					HashSalt hs;
-					try {//Creamos la contraseña cifrada y la insertamos en la base de datos.
-						hs = PasswdTool.getHash(userPasswd);
-						DBManager.getInstance().insertUserOnDb(update.getMessage().getFrom(), hs.getHash(), hs.getSalt());//Insertamos el usuario en la BD.
-					} catch (Exception e) {
-						havePasswd = false;//Volvemos a marcar para volver a la contraseña...
-						BotLogger.error(LOGTAG, e);//Guardamos mensaje y lo mostramos en pantalla de la consola.
-						e.printStackTrace();
-					}					
-				} else if (message.getText().equalsIgnoreCase("No")) {//Cambio de contraseña.
-					sendMessage.setText(BotConfig.CREATE_PASSWD_STRING);
-				} else {//Debe de ser la contraseña.
-					userPasswd = message.getText();
-					sendMessage.setText(BotConfig.CONFIRM_PASSWD_STRING + userPasswd + " ?.");
-				}
-			} else {//Si tiene pass.
-				userPasswd = message.getText();
-				String [] hashSalt = DBManager.getInstance().checkUserCredential(message.getFrom().getId());
-				boolean ok = PasswdTool.ValidatePass(userPasswd, hashSalt[0], hashSalt[1]);
-				if (ok) {
-					sendMessage.setText(BotConfig.LOGIN_OK_STRING);
-					isLogin = true;//Marcamos el login como iniciado.
-				} else {
-					sendMessage.setText(BotConfig.LOGIN_NOOK_STRING);
-				}				
-			}
-			
-		} else if(update.getMessage().getFrom().getId() != null){//Si el id del usuario no es null...
+		} else if (update.getMessage().getFrom().getId() != null){//Si el id del usuario no es null...
 			Integer id = update.getMessage().getFrom().getId();
 			if (id == BotConfig.DEV_ID){//Si es mi id...				
 				sendMessage.setText(BotConfig.DEV_WORDS);//Mensaje personalizado...xD
@@ -372,13 +315,21 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 		return BotConfig.BOT_TOKEN;
 	}
 	
+	/**
+	 * Metodo encargado de gestionar el acceso al bot por parte de un usario, registrando al usuario en la base de datos
+	 * creandole la contraseña o consultandola en la base de datos.
+	 * @param update actualización de estado.
+	 * @return true en caso de estar logueado, false como parte del proceso de registro.
+	 */
 	private boolean registerUser (Update update) {
 		SendMessage message = new SendMessage();
 		User user = update.getMessage().getFrom();
 		Long chatId = update.getMessage().getChatId();//Recogemos el id del chat desde donde se interactua con el bot.
 		boolean state = false;
+		boolean skipMessage = false;
 		if (pollMap.containsKey(user.getId())) {//El login se ha realizado anteriormente.			
 			state = true;
+			skipMessage = true;
 			return state;
 		} else {//Si no esta en el hashmap puede ser que el bot se haya caido, miramos en la BD.
 			if (!DBManager.getInstance().isUserOnDb(user.getId())) {//Si no esta en la base de datos...
@@ -386,7 +337,8 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 				if (customUser == null) {//Si es null todavia no ha entrado la contraseña...
 					message.setText(BotConfig.CREATE_PASSWD_STRING);
 					usersMap.put(user.getId(), new CustomUser());
-					state = false;					
+					state = false;
+					skipMessage = false;
 				} else {// Si no es null deberia de estar enviando la contraseña...
 					if (customUser.isHavePasswd() == false) {
 						if (update.getMessage().getText().equalsIgnoreCase("Si")) {//Afirma que la contraseña es valida...
@@ -401,18 +353,21 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 								e.printStackTrace();
 							}
 							usersMap.replace(user.getId(), customUser);
-							state = false;							
+							state = false;
+							skipMessage = false;
 							/**
 							 * Si llega hasta aqui significa que la contraseña coincide, y que se ha podido insertar el usuario
 							 * dentro de la base de datos, ahora se procedera al Login para comprobar la contraseña.
 							 */							
 						} else if (update.getMessage().getText().equalsIgnoreCase("No")) {
 							message.setText(BotConfig.CREATE_PASSWD_STRING);
-							state = false;							
+							state = false;
+							skipMessage = false;
 						} else {//Tiene que ser la contraseña...
-							userPasswd = message.getText();
+							userPasswd = update.getMessage().getText();
 							message.setText(BotConfig.CONFIRM_PASSWD_STRING + userPasswd + " ?.");
-							state = false;							
+							state = false;
+							skipMessage = false;
 						}
 					} else if (customUser.isHavePasswd() == true) {//Tiene contraseña, esta en la BD, no deberia de llegar pero...
 						userPasswd = message.getText();
@@ -422,10 +377,12 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 							message.setText(BotConfig.LOGIN_OK_STRING);
 							customUser.setLogin(true);//Marcamos el login como iniciado.
 							usersMap.replace(user.getId(), customUser);//Sustituimos el usuario con el login a Yes
-							state = true;							
+							state = true;
+							skipMessage = false;
 						} else {
-							message.setText(BotConfig.LOGIN_NOOK_STRING);
-							state = false;							
+							message.setText(BotConfig.LOGIN_NO_OK_STRING);
+							state = false;
+							skipMessage = false;
 						}
 					}
 				}				
@@ -435,34 +392,72 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 					message.setText(BotConfig.WELCOME_AGAIN_STRING);
 					usersMap.put(user.getId(), new CustomUser());
 					state = false;
+					skipMessage = false;
 				} else {//Si no es null tiene que estar enviando la contraseña...
 					if (custUser.isLogin()== false) {						
-						userPasswd = message.getText();
+						userPasswd = update.getMessage().getText();
 						String [] hashSalt = DBManager.getInstance().checkUserCredential(user.getId());
 						boolean ok = PasswdTool.ValidatePass(userPasswd, hashSalt[0], hashSalt[1]);
 						if (ok) {//Si la contraseña coincide....
 							message.setText(BotConfig.LOGIN_OK_STRING);
 							custUser.setLogin(true);//Marcamos el login como iniciado.
 							usersMap.replace(user.getId(), custUser);//Sustituimos el usuario con el login a Yes
-							state = true;							
+							state = true;
+							skipMessage = false;
 						} else {
-							message.setText(BotConfig.LOGIN_NOOK_STRING);
-							state = false;							
+							message.setText(BotConfig.LOGIN_NO_OK_STRING);
+							state = false;
+							skipMessage = false;
 						}						
 					} else if (custUser.isLogin()== true) {//Esta logeado.
-						state = true;						
+						state = true;
+						skipMessage = true;
 					}
 				}
 			}			
 		}
-		try {			
-			message.setChatId(chatId);
-			execute(message);//Enviamos el mensaje...                        
+		try {
+			if (skipMessage != true) {// Si el estado es false hay que enviar explicaciones, en caso contrario el login esta correcto.
+				message.setChatId(chatId);
+				execute(message);//Enviamos el mensaje... 
+			}			                       
         } catch (TelegramApiException e) {
         	BotLogger.error(LOGTAG, e);//Guardamos mensaje y lo mostramos en pantalla de la consola.
             e.printStackTrace();
         }			
 		return state;
+	}
+	
+	/**
+	 * Metodo encargado de registrar si es preciso al usuario en el HashMap de usuarios y encuestas.
+	 * @param update actualización de estado.
+	 */
+	private void initUserPoll (Update update){
+		User user = update.getMessage().getFrom();
+		Integer userId = user.getId();		
+		if (pollMap.containsKey(userId)) {//Si ya esta registrado en el map significa que tiene la clase Poll iniciada.
+			return;
+		} else {//Si no esta en la lista...primera ejecución.
+			if (DBManager.getInstance().checkIfHaveSurveys(userId)){//Si el usuario tiene encuestas en la base de datos...
+				pollMap.put(userId, new Poll(user, true));//Le pasamos el usuario con bool true para que recoja los datos de la BD.				
+			} else { //Si no tiene encuestas declaramos la clase vacia.				
+				pollMap.put(userId, new Poll(user, false));//Iniciamos la clase...Con bool false para que no recoja nada de la BD.
+			}
+			
+		}
+	}
+	
+	/**
+	 * Metodo encargado de personalizar el objeto SendDocument para despues enviar el manual de usuario.
+	 * @param chatId Id del chat a enviar el manual.
+	 * @return SendDocument con todo lo necesario para ser enviado.
+	 */
+	private SendDocument sendUserManual (Long chatId) {
+		File f = new File(BotConfig.USER_MANUAL);//Creamos un objeto File con el manual de Usuario.
+		SendDocument document = new SendDocument()//Creamos el objeto y le asignamos el fichero y el id del chat.		
+		.setNewDocument(f)
+		.setChatId(chatId);		
+		return document;
 	}
 	
 }
