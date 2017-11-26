@@ -123,8 +123,8 @@ public class FeedObj {
 		return inline_message_id;
 	}
 	/**
-	 * 
-	 * @param inline_message_id
+	 * Metodo encargado de asignar el id de la consulta en linea.
+	 * @param inline_message_id identificador de la consulta en linea.
 	 */
 	public void setInline_message_id(String inline_message_id) {
 		this.inline_message_id = inline_message_id;

@@ -19,7 +19,7 @@ public class FeedManager {
 	private HashMap <Integer, HashMap<Integer,FeedObj>> feedMap;
 	
 	/**
-	 * 
+	 * Constructor por defecto de clase.
 	 */
 	public FeedManager () {
 		
@@ -41,11 +41,11 @@ public class FeedManager {
 		}
 	}
 	/**
-	 * 
-	 * @param userId
-	 * @param inlineQuery
-	 * @param Url
-	 * @return
+	 * Metodo encargado de compartir el feed con otros canales.
+	 * @param userId identificador del usuario.
+	 * @param inlineQuery inlineQuery a contestar.
+	 * @param Url Url de donde extraer los feeds.
+	 * @return AnswerInlineQuery con todo lo necesario para ver la noticia.
 	 */
 	public AnswerInlineQuery shareFeed (Integer userId, InlineQuery inlineQuery, String Url){
 		HashMap <Integer,FeedObj> hashFeed = feedMap.get(userId);
@@ -60,9 +60,9 @@ public class FeedManager {
 	}
 	
 	/**
-	 * 
-	 * @param chatId
-	 * @return
+	 * Metodo encargado de enviar el boton para compartir el feed con otros chats.
+	 * @param chatId identificador del chat a donde enviar el boton.
+	 * @return SendMessage con todo lo necesario para el usuario.
 	 */
 	public SendMessage sendFeed (Long chatId,String textToSend) {
 		SendMessage message = new SendMessage();
@@ -83,9 +83,9 @@ public class FeedManager {
 		return message;
 	}
 	/**
-	 * 
-	 * @param Url
-	 * @param userId
+	 * Metodo encargado de asignar la Url para el objeto Feed.
+	 * @param Url Url con el index Xml para el feed.
+	 * @param userId identificador del usuario para obtener el objeto Feed.
 	 */
 	public void setURL (String Url,Integer userId) {
 		HashMap <Integer,FeedObj> hashFeed = feedMap.get(userId);
@@ -95,9 +95,9 @@ public class FeedManager {
 		feedMap.replace(userId, hashFeed);
 	}
 	/**
-	 * 
-	 * @param userId
-	 * @return
+	 * Metodo encargado de recuperar la Url del Feed.
+	 * @param userId Identificador del usuario para el feed.
+	 * @return Url del index Xml del feed.
 	 */
 	public String getURL (Integer userId) {
 		HashMap <Integer,FeedObj> hashFeed = feedMap.get(userId);

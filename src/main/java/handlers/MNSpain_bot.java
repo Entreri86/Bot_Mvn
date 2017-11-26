@@ -327,8 +327,7 @@ public class MNSpain_bot extends TelegramLongPollingBot {
 	 */
 	private void handleInlineQuery (Update update){
 		InlineQuery query = update.getInlineQuery();
-		Integer userId = update.getInlineQuery().getFrom().getId();//Y el id del usuario que interactua.	
-		//TODO: Arreglar la eleccion del Feeed.
+		Integer userId = update.getInlineQuery().getFrom().getId();//Y el id del usuario que interactua.		
 		Poll poll = pollMap.get(userId);//Recogemos la instancia de Poll del usuario en cuestion.	
 		FeedManager feedManager = feedMap.get(userId);//Recogemos la instancia de FeedManager del usuario.
 		CustomUser customUser = usersMap.get(userId);
