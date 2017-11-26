@@ -41,11 +41,11 @@ public class DataBaseStrings {
 	//Sentencia de insert en la tabla de las encuestas COMPROBADA Y OK.
 	public static final String INSERT_SURVEY = "INSERT INTO surveys (surveyId ,userSurveyId, question, answers, score, peopleVoted, answerOptions, surveyText) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 	//Sentencia de lectura de la tabla de encuestas COMPROBADA Y OK! EN MYSQL SE guarda un "." en vez de una ",".
-	public static final String READ_SURVEY = "SELECT question, answers, score, peopleVoted, answerOptions, inlineMsgId, inlineQueryResultArticleId, surveyText FROM surveys WHERE userId = ?;";
+	public static final String READ_SURVEY = "SELECT surveyId, question, answers, score, peopleVoted, answerOptions, surveyText, inlineMsgId FROM surveys WHERE userSurveyId = ?;";
 	//Sentencia de eliminacion de la encuesta de la tabla de encuestas COMPROBADA Y OK.
 	public static final String DELETE_SURVEYS = "DELETE FROM surveys WHERE surveyId = ?;";//Antes borraba segun usuario, ahora borra encuesta unica.
 	//Sentencia de actualizacion de la encuesta en la tabla COMPROBADA Y OK!.
-	public static final String UPDATE_SURVEY = "UPDATE surveys SET question = ?, answers = ?, score = ?, peopleVoted = ?, answerOptions = ?, surveyText = ?, inlineMsgId = ? WHERE userSurveyId = ? AND inlineQueryResultArticleId = ?;";
+	public static final String UPDATE_SURVEY = "UPDATE surveys SET question = ?, answers = ?, score = ?, peopleVoted = ?, answerOptions = ?, surveyText = ?, inlineMsgId = ? WHERE surveyId = ?;";
 	//Sentencia de comprobacion de si hay encuestas en la BD con relacion al usuario COMPROBADA Y OK.
 	public static final String CHECK_SURVEYS = "SELECT * FROM surveys WHERE userSurveyId = ? ;";
 	//Sentencia de creacion de la tabla de FEEDS RSS COMPROBADA Y OK!

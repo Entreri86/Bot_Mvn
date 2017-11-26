@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.logging.BotLogger;
+import services.FeedObj;
 import services.Survey;
 
 public class DBManager {
@@ -183,10 +184,10 @@ public class DBManager {
 				return false;
 			}
 			id = result.getInt("userSurveyId");//En otro caso cogemos el id.
-		} catch (SQLException e) {
+		    } catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
-		}
+		    }
 		  if (id.equals(userId)){//Si el id coincide es que tiene encuestas en la BD y devolvemos true.			
 				return true;
 			} else {
@@ -231,7 +232,7 @@ public class DBManager {
 			statement.setString(5, scoreToDb);//Puntuaciones.
 			statement.setInt(6, peopleVoted);//Gente que ha votado.
 			statement.setInt(7, answerOptions);//Opciones de respuesta.				
-			statement.setString(8, surveyText);//Texto final de la encuesta.
+			statement.setString(8, surveyText);//Texto final de la encuesta.			
 			//statement.setString(9, inlineMsgId);//Id del mensaje donde se ha realizado la votacion.
 			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
@@ -278,8 +279,7 @@ public class DBManager {
 			statement.setInt(5, answerOptions);//Opciones de respuesta.
 			statement.setString(6, surveyText);//Texto de la encuesta completo (con marcas etc).
 			statement.setString(7, inlineMessageId);//Id del mensaje de la encuesta.
-			statement.setInt(8, userId);//Id del usuario.
-			statement.setString(9, inlineQueryResultArticleId);//Id unico de la encuesta!!
+			statement.setString(8, inlineQueryResultArticleId);//Id unico de la encuesta!!			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
 			e.printStackTrace();
@@ -292,10 +292,10 @@ public class DBManager {
 	   * @param user identificador del usuario.
 	   * @return true si se logra ejecutar la sentencia.
 	   */
-	public boolean deleteSurveysOnDb (Integer userId){		
+	public boolean deleteSurveyOnDb (String surveyId){		
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.DELETE_SURVEYS);//Recogemos el PreparedSt...
-			statement.setInt(1, userId);
+			statement.setString(1, surveyId);
 			statement.executeUpdate();//Ejecutamos la sentencia.			
 		} catch (SQLException e) {
 			BotLogger.error(LOGTAG, e);
@@ -319,7 +319,7 @@ public class DBManager {
 			ResultSet result = statement.executeQuery();			
 			while (result.next()){//Mientras haya resultados...				
 				Survey survey = new Survey();//Creamos un objeto encuesta a rellenar.
-				survey.setInlineQueryResultArticleId(result.getString("inlineQueryResultArticleId"));//Id unica del articulo encuesta para compartir las encuestas con la lista.
+				survey.setInlineQueryResultArticleId(result.getString("surveyId"));//Id unica del articulo encuesta para compartir las encuestas con la lista.
 				survey.setQuestion(result.getString("question"));//Asignamos la pregunta recogiendola del ResultSet.
 				String answers = result.getString("answers");//Recogemos las respuestas.				
 				String [] splitAnswers = answers.split(mark);//Recortamos los resultados segun la marca.				
@@ -344,5 +344,40 @@ public class DBManager {
 		return surveys;
 	}
 	
-	//TODO: CREACION DE METODOS CRUD de las tablas del Feed!! 
+	//TODO: CREACION DE METODOS CRUD de las tablas del Feed!!
+	/**
+	 * Metodo encargado de comprobar si el usuario dispone de feeds en la BD.
+	 * @param userId identificador del usuario a comprobar.
+	 * @return true en caso de tener feeds, false en caso contrario.
+	 */
+	public boolean checkIfHaveFeeds (Integer userId) {
+		Integer id = 0;
+		  try {
+			PreparedStatement statement = connection.getPreparedStatement(DataBaseStrings.READ_FEED_URL);
+			statement.setInt(1, userId);
+			ResultSet result = statement.executeQuery();
+			if (!result.next()){//Si no hay ningun resultado es que es nulo.				
+				return false;
+			}
+			id = result.getInt("userAdminId");//En otro caso cogemos el id.
+		    } catch (SQLException e) {
+			BotLogger.error(LOGTAG, e);
+			e.printStackTrace();
+		    }
+		  if (id.equals(userId)){//Si el id coincide es que tiene encuestas en la BD y devolvemos true.			
+				return true;
+			} else {
+				return false;
+			}	
+	}
+	
+	public ArrayList <FeedObj> getFeedsFromDb(Integer userId){
+		ArrayList <FeedObj> feeds = new ArrayList<>();
+		
+		
+		
+		
+		
+		return feeds;
+	}
 }

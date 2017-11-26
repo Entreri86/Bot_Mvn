@@ -364,7 +364,7 @@ public class Survey {
 		List<InlineKeyboardButton> rowInline = new ArrayList<>();
     	InlineKeyboardButton shareButton = new InlineKeyboardButton();
     	shareButton.setText("Compartir encuesta.");    	   	
-    	shareButton.setSwitchInlineQuery("");   	    	
+    	shareButton.setSwitchInlineQuery("");    	    	
     	rowInline.add(shareButton);
     	rowsInline.add(rowInline);
     	//Segundo boton.

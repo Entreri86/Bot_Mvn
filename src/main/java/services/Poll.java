@@ -24,8 +24,7 @@ import bot.PersistentValues;
 public class Poll {	
 	private User user;
 	private boolean isInBd;//Bool para controlar si se ha insertado en la BD la encuesta.
-	private boolean isBackingUp;
-	public static final String parseMode = "HTML";//Parseo HTML	
+	private boolean isBackingUp;		
 	private Survey oSurvey;//Objeto que representa una encuesta unica.
 	private HashMap <Integer, List<Survey>> userSurveyList;//HashMap con lista de encuestas por usuario.
 	private HashMap <Integer, List<InlineQueryResult>> userSurveyResultArticlelist;//HashMap con lista de articulos por usuario.
@@ -46,7 +45,7 @@ public class Poll {
 	 */
 	public Poll (User user, boolean bool){
 		this.user = user;
-		isInBd = false;//TODO: Puede dar problemas con la BD si ya esta adentro, PROVISIONAL!!!
+		isInBd = false;
 		isBackingUp = false;
 		persistentValues = new PersistentValues();		
 		if (bool){//Si true, esta en la bd recogemos datos...			
@@ -170,7 +169,7 @@ public class Poll {
 		SendMessage message = new SendMessage();//Iniciamos mensaje y String.				
 		message.setChatId(chatId);
 		message.setText(textToSend);
-		message.setParseMode(parseMode);//Asignamos al mensaje el parseador html para la negrita.		
+		message.setParseMode(BotConfig.PARSE_MODE);//Asignamos al mensaje el parseador html para la negrita.		
     	message.setReplyMarkup(this.oSurvey.createPrivateKeyboard());//Creamos el teclado personalizado.
     	return message;
 	}	
@@ -183,7 +182,7 @@ public class Poll {
 		SendMessage message = new SendMessage();//Iniciamos mensaje.				
 		message.setChatId(chatId);//ID del chat donde se dirige la encuesta.
 		message.setText(textToSend);//Texto a enviar.
-		message.setParseMode(parseMode);//Asignamos al mensaje el parseador html para la negrita.		
+		message.setParseMode(BotConfig.PARSE_MODE);//Asignamos al mensaje el parseador html para la negrita.		
         message.setReplyMarkup(this.oSurvey.createKeyboard());//Creamos el teclado.        
 		return message;		
 	}	
@@ -197,7 +196,7 @@ public class Poll {
 		message.setInlineMessageId(inlineMsgId);//ID del mensaje de la InlineQuery del chat donde se esta votando.
 		this.oSurvey.setInlineMsgId(inlineMsgId);//Fijamos el Id del mensaje por si se necesita en usos posteriores (restaurar BD etc)
 		message.setText(textToSend);//Asignamos texto actualizado
-		message.setParseMode(parseMode);//Parseo HTML		
+		message.setParseMode(BotConfig.PARSE_MODE);//Parseo HTML		
 		message.setReplyMarkup(this.oSurvey.updateKeyboard());//Actualizamos el reply y se lo pasamos.		
 		return message;
 	}	
@@ -213,7 +212,7 @@ public class Poll {
 		message.setMessageId(messageId);//Id del mensaje privado del chat con el usuario que creo la encuesta.
 		message.setChatId(chatId);//Id del chat privado con el usuario del bot.
 		message.setText(textToSend);//Asignamos texto actualizado
-		message.setParseMode(parseMode);//Parseo HTML		
+		message.setParseMode(BotConfig.PARSE_MODE);//Parseo HTML		
 		message.setReplyMarkup(this.oSurvey.createPrivateKeyboard());//Actualizamos el reply y se lo pasamos.		
 		return message;
 	}	
@@ -224,7 +223,7 @@ public class Poll {
 	private InputTextMessageContent surveyText(){
 		InputTextMessageContent inputText = new InputTextMessageContent();
 		inputText.setMessageText(this.oSurvey.getSurveyText());//Asignamos el texto de la encuesta.		
-		inputText.setParseMode(parseMode);//Parseo HTML.
+		inputText.setParseMode(BotConfig.PARSE_MODE);//Parseo HTML.		
 		return inputText;
 	}
 	/**
@@ -290,7 +289,7 @@ public class Poll {
 		for(Survey survey : surveysList){//Por cada encuesta de la lista...
 			InputTextMessageContent message = new InputTextMessageContent();//Creamos un contenido.
 			message.setMessageText(survey.getSurveyText());//Asignamos el texto de la encuesta.
-			message.setParseMode(parseMode);//Parseo HTML
+			message.setParseMode(BotConfig.PARSE_MODE);//Parseo HTML
 			InlineQueryResultArticle article = new InlineQueryResultArticle();//Creamos un articulo
 			article.setInputMessageContent(message);//Asignamos contenido.
 			article.setReplyMarkup(survey.createKeyboard());//Creamos el teclado.
@@ -317,7 +316,7 @@ public class Poll {
 	 * Metodo que crea un nuevo hilo por cada objeto Survey creado para mantener actualizada la encuesta y sus resultados
 	 * en la base de datos.
 	 */
-	private void startBackUp (){//FIXME: Objeto service de clase para detenerlo??
+	private void startBackUp (){
 		BackUpSurvey command = new BackUpSurvey();//Creamos el "comando" que realizara el BackUp 
 		ScheduledExecutorService service = Executors.newScheduledThreadPool(1);//Con un solo hilo bastaria.
 		System.out.println("Se esta respaldando en hilo secundario...");
@@ -336,6 +335,14 @@ public class Poll {
        public void run() {		   
 		   DBManager.getInstance().updateSurvey(user.getId(), oSurvey);//Actualizamos la encuesta.
        }
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	public String getInlineQueryResultArticleId() {
+		String inlineQueryId = oSurvey.getInlineQueryResultArticleId();
+		return inlineQueryId;
 	}
 	
 	
